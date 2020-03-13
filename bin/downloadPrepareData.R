@@ -76,11 +76,11 @@ flog.debug("Prepare metadata")
 
 metadata <- gse[["GSE63042_series_matrix.txt.gz"]]@phenoData@data
 metadata <- mutate(metadata, outcome = with(metadata, 
-                                            ifelse(grepl("Septic shock", metadata$`sirs outcomes:ch1`), "Sepsis survival",
-                                                   ifelse(grepl("severe sepsis", metadata$`sirs outcomes:ch1`), "Sepsis survival",
-                                                          ifelse(grepl("Uncomplicated sepsis", metadata$`sirs outcomes:ch1`), "Sepsis survival",
+                                            ifelse(grepl("Septic shock", metadata$`sirs outcomes:ch1`), "Sepsis_Survival",
+                                                   ifelse(grepl("severe sepsis", metadata$`sirs outcomes:ch1`), "Sepsis_Survival",
+                                                          ifelse(grepl("Uncomplicated sepsis", metadata$`sirs outcomes:ch1`), "Sepsis_Survival",
                                                                  ifelse(grepl("SIRS", metadata$`sirs outcomes:ch1`), "SIRS",
-                                                                        "sepsis death"))))))
+                                                                        "Sepsis Death"))))))
 rownames(metadata) <- metadata$title
 metadata <- metadata[match(colnames(exprs), rownames(metadata)), ]
 
