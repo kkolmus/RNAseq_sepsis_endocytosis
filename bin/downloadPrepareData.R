@@ -16,9 +16,9 @@ flog.threshold("DEBUG")
 
 flog.debug("Set directories")
 
-proj.dir = "~/Desktop/HT projects/sepsis_endocytosis"
-raw.data.dir = "~/Desktop/HT projects/sepsis_endocytosis/raw_data"
-data.dir = "~/Desktop/HT projects/sepsis_endocytosis/data"
+proj.dir = "~/Desktop/HT projects/RNAseq_sepsis_endocytosis"
+raw.data.dir = "~/Desktop/HT projects/RNAseq_sepsis_endocytosis/raw_data"
+data.dir = "~/Desktop/HT projects/RNAseq_sepsis_endocytosis/data"
 geo = "GSE63042"
 
 
