@@ -31,6 +31,8 @@ genes <- select(Homo.sapiens,
                 keytype = "SYMBOL",
                 columns = c("ENSEMBL", "ENTREZID", "TXCHROM"))
 
+genes <- genes[!duplicated(genes$SYMBOL),]
+
 
 flog.debug("Organising sample information in metadata")
 
@@ -42,8 +44,7 @@ metadata$new_sample_names <- paste0(metadata$geo_accession, "_", metadata$outcom
 
 flog.debug("Organising sample information in data")
 
-colnames(rpm) <- metadata$new_sample_names 
-
+colnames(rpm) <- metadata$new_sample_names
 
 
 flog.debug("Prepare separate files")
@@ -59,6 +60,7 @@ for (i in names(rpm)) {
               sep = "\t")
 }
 
+rm(column1, i, row_names, temp_file)
 
 file.list <- list.files(data.dir, pattern = ".txt")
 
@@ -77,10 +79,17 @@ class(x)
 colnames(x) <- metadata$new_sample_names
 group <- as.factor(metadata$outcome)
 
+
 x$samples$group <- group
 
+x$samples
+dim(x)
 
 flog.debug("Data pre-processing")
+
+# Add gene information
+
+x$genes <- genes
 
 # Transformations from the raw-scale
 
@@ -92,6 +101,7 @@ class(RPM)
 
 RPM1 <- mutate_all(RPM, funs(.+1))
 lRPM <- mutate_all(RPM1, funs(log2))
+rownames(lRPM) <- genes$SYMBOL
 
 L <- mean(x$samples$lib.size) * 1e-6
 M <- median(x$samples$lib.size) * 1e-6
@@ -109,3 +119,81 @@ x <- x[keep.exprs, , keep.lib.sizes = FALSE]
 dim(x)
 
 
+flog.debug("Normalizing gene expression distributions")
+
+x <- calcNormFactors(x, method = "TMM")
+x$samples$norm.factors
+dim(x)
+
+x2 <- x
+x2$samples$norm.factors <- 1
+x2$counts[,1] <- ceiling(x2$counts[,1]*0.05)
+x2$counts[,2] <- x2$counts[,2]*5
+
+par(mfrow=c(1,2))
+
+lcpm <- cpm(x2, log=TRUE)
+boxplot(lcpm, las=2, col=col, main="")
+title(main="A. Unnormalized data",ylab="Log-cpm")
+
+x2 <- calcNormFactors(x2)  
+x2$samples$norm.factors
+
+lcpm <- cpm(x2, log=TRUE)
+boxplot(lcpm, las=2, col=col, main="")
+title(main="B. Normalized data",ylab="Log-cpm")
+
+
+flog.debug("Differential expression analysis")
+
+flog.debug("Creating a design matrix and contrasts")
+
+design <- model.matrix(~0+group)
+colnames(design) <- gsub("group", "", colnames(design))
+design
+
+
+contrast.matrix <- makeContrasts(
+  SurvivedvsDeath = Sepsis_Survival - Sepsis_Death, 
+  SurvivedvsSIRS = Sepsis_Survival - SIRS, 
+  SIRSvsDeath = Sepsis_Survival - Sepsis_Death, 
+  levels = colnames(design))
+contrast.matrix
+
+
+flog.debug("Removing heteroscedascity from count data")
+
+par(mfrow=c(1,2))
+v <- voom(x, design, plot = TRUE)
+v
+
+vfit <- lmFit(v, design)
+vfit <- contrasts.fit(vfit, contrasts = contrast.matrix)
+efit <- eBayes(vfit)
+
+plotSA(efit, main="Final model: Mean-variance trend")
+
+# Means (x-axis) and variances (y-axis) of each gene are plotted to show the dependence 
+# between the two before voom is applied to the data (left panel) and how the trend is 
+# removed after voom precision weights are applied to the data (right panel).
+
+
+flog.debug("Identify differentially regulated genes")
+
+summary(decideTests(efit))
+
+tfit <- treat(vfit, lfc=1)
+dt <- decideTests(tfit)
+summary(dt)
+
+de.common <- which(dt[,1]!=0 & dt[,2]!=0)
+length(de.common)
+
+head(tfit$genes$SYMBOL[de.common], n = 25)
+
+
+
+### SESSION INFO ###
+
+flog.debug("Session Info")
+sessionInfo()

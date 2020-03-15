@@ -80,7 +80,7 @@ metadata <- mutate(metadata, outcome = with(metadata,
                                                    ifelse(grepl("severe sepsis", metadata$`sirs outcomes:ch1`), "Sepsis_Survival",
                                                           ifelse(grepl("Uncomplicated sepsis", metadata$`sirs outcomes:ch1`), "Sepsis_Survival",
                                                                  ifelse(grepl("SIRS", metadata$`sirs outcomes:ch1`), "SIRS",
-                                                                        "Sepsis Death"))))))
+                                                                        "Sepsis_Death"))))))
 rownames(metadata) <- metadata$title
 metadata <- metadata[match(colnames(exprs), rownames(metadata)), ]
 
